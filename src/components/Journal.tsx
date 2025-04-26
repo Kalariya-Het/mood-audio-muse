@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/input";
 import { Mood, JournalEntry } from '@/types';
 import { getMoodEmoji } from '@/utils/moodDetection';
 import { v4 as uuidv4 } from 'uuid';
-import { Book, Save, X } from 'lucide-react';
+import { Book, Save, X, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { useJournal } from '@/hooks/useJournal';
 
 interface JournalProps {
@@ -107,7 +107,7 @@ const Journal: React.FC<JournalProps> = ({ currentMood }) => {
         <Button 
           onClick={toggleJournal}
           variant={isOpen ? "secondary" : "outline"}
-          className="border-mindmosaic-purple text-mindmosaic-dark-purple hover:bg-mindmosaic-light-purple dark:text-white dark:border-mindmosaic-light-purple"
+          className="border-mindmosaic-purple text-mindmosaic-dark-purple hover:bg-mindmosaic-light-purple dark:text-white dark:border-mindmosaic-light-purple transition-all duration-300"
         >
           <Book size={18} className="mr-2" />
           {isOpen ? "Close Journal" : "Open Journal"}
@@ -116,15 +116,16 @@ const Journal: React.FC<JournalProps> = ({ currentMood }) => {
         <Button 
           onClick={toggleEntries}
           variant={showEntries ? "secondary" : "outline"}
-          className="border-mindmosaic-purple text-mindmosaic-dark-purple hover:bg-mindmosaic-light-purple dark:text-white dark:border-mindmosaic-light-purple"
+          className="border-mindmosaic-purple text-mindmosaic-dark-purple hover:bg-mindmosaic-light-purple dark:text-white dark:border-mindmosaic-light-purple transition-all duration-300"
           disabled={entries.length === 0}
         >
+          <Calendar size={18} className="mr-2" />
           {showEntries ? "Hide Entries" : "View Past Entries"}
         </Button>
       </div>
       
       {isOpen && (
-        <Card className="mt-2 bg-white/80 dark:bg-mindmosaic-dark-gray/80 backdrop-blur-sm border-mindmosaic-light-purple animate-fade-in">
+        <Card className="mt-3 bg-white/90 dark:bg-mindmosaic-dark-gray/90 backdrop-blur-md border-mindmosaic-light-purple animate-fade-in shadow-soft hover:shadow-lg transition-all duration-300">
           <CardContent className="p-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2 mb-3">
@@ -143,7 +144,7 @@ const Journal: React.FC<JournalProps> = ({ currentMood }) => {
               </Button>
             </div>
             
-            <p className="text-mindmosaic-dark-purple dark:text-mindmosaic-light-purple mb-3 italic">
+            <p className="text-mindmosaic-dark-purple dark:text-mindmosaic-light-purple mb-3 italic bg-mindmosaic-light-purple/30 dark:bg-mindmosaic-purple/30 p-3 rounded-md">
               {prompt}
             </p>
             
@@ -151,14 +152,14 @@ const Journal: React.FC<JournalProps> = ({ currentMood }) => {
               value={entry}
               onChange={(e) => setEntry(e.target.value)}
               placeholder="Start writing here..."
-              className="min-h-[120px] resize-none bg-white dark:bg-mindmosaic-dark-gray border-mindmosaic-light-purple"
+              className="min-h-[120px] resize-none bg-white dark:bg-mindmosaic-dark-gray border-mindmosaic-light-purple focus:ring-mindmosaic-purple focus:border-mindmosaic-purple"
               aria-label="Journal entry"
             />
             
             <div className="flex justify-end mt-3">
               <Button 
                 onClick={handleSave}
-                className="bg-mindmosaic-purple hover:bg-mindmosaic-dark-purple"
+                className="bg-gradient-to-r from-mindmosaic-purple to-mindmosaic-dark-purple hover:opacity-90 text-white transition-all duration-300"
                 disabled={!entry.trim()}
               >
                 <Save size={16} className="mr-1" />
@@ -170,22 +171,33 @@ const Journal: React.FC<JournalProps> = ({ currentMood }) => {
       )}
       
       {showEntries && entries.length > 0 && (
-        <Card className="mt-2 bg-white/80 dark:bg-mindmosaic-dark-gray/80 backdrop-blur-sm border-mindmosaic-light-purple animate-fade-in">
+        <Card className="mt-3 bg-white/90 dark:bg-mindmosaic-dark-gray/90 backdrop-blur-md border-mindmosaic-light-purple animate-fade-in shadow-soft hover:shadow-lg transition-all duration-300">
           <CardContent className="p-4">
-            <h3 className="text-lg font-semibold text-mindmosaic-dark-purple dark:text-mindmosaic-light-purple mb-3">
-              Your Journal Entries
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold text-mindmosaic-dark-purple dark:text-mindmosaic-light-purple">
+                Your Journal Entries
+              </h3>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowEntries(false)}
+                className="text-mindmosaic-dark-purple dark:text-mindmosaic-light-purple hover:bg-mindmosaic-light-purple dark:hover:bg-mindmosaic-dark-purple/30"
+              >
+                <ChevronUp size={16} className="mr-1" />
+                Hide
+              </Button>
+            </div>
             
-            <div className="max-h-[300px] overflow-y-auto space-y-3">
+            <div className="max-h-[300px] overflow-y-auto pr-1 space-y-3 scrollbar-thin scrollbar-thumb-mindmosaic-purple scrollbar-track-transparent">
               {entries.slice().reverse().map(entry => (
                 <div 
                   key={entry.id} 
-                  className="p-3 border border-mindmosaic-light-purple rounded-md bg-white/70 dark:bg-mindmosaic-dark-gray/70"
+                  className="p-3 border border-mindmosaic-light-purple/50 rounded-md bg-white/70 dark:bg-mindmosaic-dark-gray/70 hover:shadow-md transition-all duration-300"
                 >
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-2">
-                      <span>{getMoodEmoji(entry.mood)}</span>
-                      <span className="text-xs text-mindmosaic-gray dark:text-mindmosaic-light-purple">
+                      <span className="text-xl">{getMoodEmoji(entry.mood)}</span>
+                      <span className="text-xs text-mindmosaic-gray dark:text-mindmosaic-light-purple font-medium">
                         {entry.timestamp.toLocaleDateString()} at {entry.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </span>
                     </div>
