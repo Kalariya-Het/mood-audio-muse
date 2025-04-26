@@ -13,6 +13,7 @@ export interface Recommendation {
   type: 'music' | 'movie' | 'book' | 'destination';
   title: string;
   description: string;
+  spotifyId?: string; // Added for Spotify integration
 }
 
 export interface MoodRecommendations {
@@ -29,4 +30,21 @@ export interface Tip {
   id: string;
   text: string;
   timestamp: Date;
+  likes?: number; // Added for the like system
+  likedBy?: string[]; // Added to track who liked each tip
 }
+
+export interface JournalEntry {
+  id: string;
+  text: string;
+  mood: Mood;
+  timestamp: Date;
+}
+
+export interface MoodRecord {
+  mood: Mood;
+  timestamp: Date;
+}
+
+// For dark mode
+export type Theme = 'light' | 'dark';

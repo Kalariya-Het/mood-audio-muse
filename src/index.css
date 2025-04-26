@@ -35,6 +35,36 @@
 
     --radius: 0.75rem;
   }
+
+  .dark {
+    --background: 26 31 44; /* Dark Gray (#1A1F2C) */
+    --foreground: 255 255 255; /* White */
+
+    --card: 26 31 44;
+    --card-foreground: 255 255 255;
+
+    --popover: 26 31 44;
+    --popover-foreground: 255 255 255;
+
+    --primary: 229 222 255; /* Light Purple (#E5DEFF) */
+    --primary-foreground: 26 31 44;
+
+    --secondary: 126 105 171; /* Dark Purple (#7E69AB) */
+    --secondary-foreground: 255 255 255;
+
+    --muted: 45 50 63; /* Darker Gray */
+    --muted-foreground: 142 145 150; /* Gray (#8E9196) */
+
+    --accent: 126 105 171; /* Dark Purple (#7E69AB) */
+    --accent-foreground: 255 255 255;
+
+    --destructive: 255 82 82; /* Red */
+    --destructive-foreground: 255 255 255;
+
+    --border: 45 50 63; /* Darker Gray */
+    --input: 45 50 63;
+    --ring: 229 222 255; /* Light Purple (#E5DEFF) */
+  }
 }
 
 @layer base {
@@ -44,6 +74,17 @@
 
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Improved accessibility for focus states */
+  :focus {
+    @apply outline-2 outline-offset-2 outline-mindmosaic-purple dark:outline-mindmosaic-light-purple;
+  }
+  
+  /* Skip navigation for keyboard users */
+  .skip-link {
+    @apply sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-50 focus:bg-white focus:text-mindmosaic-dark-purple focus:p-4 focus:m-2 focus:rounded-md;
   }
 
   .chat-bubble {
@@ -55,22 +96,75 @@
   }
 
   .chat-bubble-bot {
-    @apply chat-bubble bg-mindmosaic-light-purple text-mindmosaic-dark-gray mr-auto;
+    @apply chat-bubble bg-mindmosaic-light-purple text-mindmosaic-dark-gray mr-auto dark:bg-mindmosaic-dark-purple/80 dark:text-white;
   }
 
   .mindful-activity {
-    @apply bg-mindmosaic-light-purple/70 p-4 rounded-lg my-2 border-l-4 border-mindmosaic-purple;
+    @apply bg-mindmosaic-light-purple/70 p-4 rounded-lg my-2 border-l-4 border-mindmosaic-purple dark:bg-mindmosaic-dark-purple/40 dark:border-mindmosaic-light-purple;
   }
 
   .emergency-support {
-    @apply bg-red-100 p-4 rounded-lg my-2 border-l-4 border-red-500;
+    @apply bg-red-100 p-4 rounded-lg my-2 border-l-4 border-red-500 dark:bg-red-900/20 dark:border-red-500;
   }
 
   .recommendation {
-    @apply bg-white/80 p-3 rounded-lg shadow-soft mb-2;
+    @apply bg-white/80 p-3 rounded-lg shadow-soft mb-2 dark:bg-mindmosaic-dark-gray/70;
   }
 
   .tip-item {
     @apply bg-yellow-100 p-3 rounded-lg shadow-sm my-2 border-l-4 border-yellow-400 animate-fade-in;
+  }
+  
+  /* Touch optimizations */
+  .touch-device button, 
+  .touch-device a {
+    @apply min-h-[44px] min-w-[44px]; /* WCAG AA minimum touch target size */
+  }
+}
+
+/* Offline indicator */
+.offline-indicator {
+  @apply fixed top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium shadow-md z-50;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Cross-browser compatibility fixes */
+@supports (-webkit-touch-callout: none) {
+  /* iOS specific styles */
+  input, button, textarea, select {
+    @apply text-base; /* Prevents zoom on iOS */
+  }
+}
+
+/* Firefox specific styles */
+@-moz-document url-prefix() {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(155, 135, 245, 0.5) transparent;
+  }
+}
+
+/* Safari specific styles */
+@media not all and (min-resolution:.001dpcm) {
+  @supports (-webkit-appearance:none) {
+    .safari-fix {
+      -webkit-appearance: none;
+    }
+  }
+}
+
+/* Media query for high contrast mode */
+@media (forced-colors: active) {
+  .high-contrast-fix {
+    border: 1px solid ButtonText;
   }
 }

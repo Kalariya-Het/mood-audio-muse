@@ -3,22 +3,45 @@ import React, { useState, useEffect, useRef } from 'react';
 import ChatBubble from './ChatBubble';
 import ChatInput from './ChatInput';
 import RecommendationsCard from './RecommendationsCard';
-import { Message, Mood } from '@/types';
+import MoodChart from './MoodChart';
+import Journal from './Journal';
+import SpotifyPlayer from './SpotifyPlayer';
+import { Message, Mood, MoodRecord } from '@/types';
 import { detectMood } from '@/utils/moodDetection';
 import { getMoodRecommendations, generateResponse } from '@/utils/recommendations';
-import { generateAudio } from '@/utils/audioUtils';
+import { getSpotifyRecommendation } from '@/utils/spotifyRecommendations';
+import { generateAudio, playSpeechSynthesis } from '@/utils/audioUtils';
 import { v4 as uuidv4 } from 'uuid';
+import { useToast } from "@/hooks/use-toast";
 
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [processing, setProcessing] = useState(false);
   const [currentMood, setCurrentMood] = useState<Mood>('unknown');
   const [hasRecommendations, setHasRecommendations] = useState(false);
+  const [moodHistory, setMoodHistory] = useState<MoodRecord[]>([]);
+  const [showMoodChart, setShowMoodChart] = useState(false);
+  const { toast } = useToast();
   
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const isFirstRender = useRef(true);
   
   // Initial welcome message
   useEffect(() => {
+    // Load mood history from localStorage
+    const savedMoodHistory = localStorage.getItem('moodHistory');
+    if (savedMoodHistory) {
+      try {
+        const parsed = JSON.parse(savedMoodHistory);
+        setMoodHistory(parsed.map((record: any) => ({
+          ...record,
+          timestamp: new Date(record.timestamp)
+        })));
+      } catch (e) {
+        console.error('Error parsing mood history:', e);
+      }
+    }
+    
     const welcomeMessage: Message = {
       id: uuidv4(),
       text: "Hi there! I'm your MindMosaic companion. How have you been feeling lately?",
@@ -27,6 +50,28 @@ const Chat: React.FC = () => {
     };
     
     setMessages([welcomeMessage]);
+    
+    // Check for browser support
+    const browserSupportMessage = checkBrowserSupport();
+    if (browserSupportMessage) {
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          id: uuidv4(),
+          text: browserSupportMessage,
+          sender: 'bot',
+          timestamp: new Date()
+        }]);
+      }, 1000);
+    }
+    
+    // Register service worker for offline support
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(error => {
+          console.log('Service Worker registration failed:', error);
+        });
+      });
+    }
   }, []);
   
   // Auto-scroll to the most recent message
@@ -35,6 +80,66 @@ const Chat: React.FC = () => {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
+  
+  // Play audio for bot messages with text-to-speech
+  useEffect(() => {
+    if (!isFirstRender.current && messages.length > 0) {
+      const latestMessage = messages[messages.length - 1];
+      if (latestMessage.sender === 'bot' && latestMessage.text) {
+        // Don't read meditation scripts or long texts
+        if (!latestMessage.audio && latestMessage.text.length < 200) {
+          setTimeout(() => {
+            playSpeechSynthesis(latestMessage.text);
+          }, 500);
+        }
+      }
+    }
+    isFirstRender.current = false;
+  }, [messages]);
+  
+  const checkBrowserSupport = (): string | null => {
+    let missingFeatures = [];
+    
+    // Check Web Speech API
+    if (!('webkitSpeechRecognition' in window)) {
+      missingFeatures.push('voice input');
+    }
+    
+    if (!('speechSynthesis' in window)) {
+      missingFeatures.push('text-to-speech');
+    }
+    
+    // Check LocalStorage
+    if (!('localStorage' in window)) {
+      missingFeatures.push('data storage');
+    }
+    
+    if (missingFeatures.length > 0) {
+      return `Note: Your browser has limited support for ${missingFeatures.join(' and ')}. For the best experience, please use Chrome, Edge, or Firefox.`;
+    }
+    
+    return null;
+  };
+  
+  const saveMoodToHistory = (mood: Mood) => {
+    if (mood === 'unknown') return;
+    
+    const newRecord: MoodRecord = {
+      mood,
+      timestamp: new Date()
+    };
+    
+    const updatedHistory = [...moodHistory, newRecord];
+    setMoodHistory(updatedHistory);
+    
+    // Save to localStorage
+    localStorage.setItem('moodHistory', JSON.stringify(updatedHistory));
+    
+    // Show mood chart after collecting a few mood datapoints
+    if (updatedHistory.length >= 3 && !showMoodChart) {
+      setShowMoodChart(true);
+    }
+  };
   
   const handleSendMessage = async (text: string) => {
     // Add user message
@@ -52,9 +157,27 @@ const Chat: React.FC = () => {
       // Detect mood from user message
       const detectedMood = detectMood(text);
       setCurrentMood(detectedMood);
+      saveMoodToHistory(detectedMood);
       
       // Get recommendations for the mood
       const recommendations = getMoodRecommendations(detectedMood);
+      
+      // Try to get Spotify recommendation
+      let spotifyRec = null;
+      try {
+        spotifyRec = await getSpotifyRecommendation(detectedMood);
+        if (spotifyRec) {
+          recommendations.music = {
+            ...recommendations.music,
+            title: `${spotifyRec.name} by ${spotifyRec.artist}`,
+            description: spotifyRec.description,
+            spotifyId: spotifyRec.id
+          };
+        }
+      } catch (error) {
+        console.error('Error fetching Spotify recommendation:', error);
+        // Use default recommendation from getMoodRecommendations
+      }
       
       // Generate response based on mood
       const responseText = generateResponse(detectedMood);
@@ -74,6 +197,11 @@ const Chat: React.FC = () => {
       
       setMessages(prev => [...prev, botResponse]);
       setHasRecommendations(true);
+      
+      toast({
+        title: `Mood detected: ${detectedMood}`,
+        description: "I've prepared personalized recommendations for you.",
+      });
     } catch (error) {
       console.error('Error processing message:', error);
       
@@ -91,6 +219,10 @@ const Chat: React.FC = () => {
     }
   };
   
+  const toggleMoodChart = () => {
+    setShowMoodChart(prev => !prev);
+  };
+  
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -100,10 +232,21 @@ const Chat: React.FC = () => {
         
         {/* Show recommendations after mood detection */}
         {hasRecommendations && currentMood !== 'unknown' && (
-          <RecommendationsCard 
-            recommendations={getMoodRecommendations(currentMood)} 
-            mood={currentMood}
-          />
+          <>
+            <RecommendationsCard 
+              recommendations={getMoodRecommendations(currentMood)} 
+              mood={currentMood}
+            />
+            <SpotifyPlayer music={getMoodRecommendations(currentMood).music} />
+          </>
+        )}
+        
+        {/* Journal component */}
+        <Journal currentMood={currentMood} />
+        
+        {/* Mood Chart */}
+        {moodHistory.length >= 2 && showMoodChart && (
+          <MoodChart moodHistory={moodHistory} />
         )}
         
         {/* Invisible element for auto-scrolling */}
@@ -115,6 +258,20 @@ const Chat: React.FC = () => {
           onSendMessage={handleSendMessage} 
           disabled={processing}
         />
+        
+        {/* Show mood chart button if we have enough history */}
+        {moodHistory.length >= 2 && (
+          <div className="flex justify-center mt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs border-mindmosaic-purple text-mindmosaic-dark-purple hover:bg-mindmosaic-light-purple dark:text-white dark:border-mindmosaic-light-purple"
+              onClick={toggleMoodChart}
+            >
+              {showMoodChart ? "Hide Mood Chart" : "Show Mood Chart"}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
