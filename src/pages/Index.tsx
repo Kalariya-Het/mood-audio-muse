@@ -80,13 +80,13 @@ const Index = () => {
       
       <main className="px-4 pb-8">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            <div className={`md:col-span-${showCommunity ? '8' : '12'} h-[calc(100vh-240px)] bg-white/40 dark:bg-mindmosaic-dark-gray/40 backdrop-blur-sm border border-mindmosaic-light-purple rounded-xl shadow-soft overflow-hidden`}>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+            <div className={`md:col-span-${showCommunity ? '8' : '12'} h-[calc(100vh-240px)] bg-white/40 dark:bg-mindmosaic-dark-gray/40 backdrop-blur-sm border border-mindmosaic-light-purple rounded-xl shadow-soft transition-all duration-300 ease-in-out animate-fade-in overflow-hidden hover:shadow-lg`}>
               <Chat />
             </div>
             
             {showCommunity && (
-              <div className="md:col-span-4 h-[calc(100vh-240px)] overflow-hidden flex flex-col">
+              <div className="md:col-span-4 h-[calc(100vh-240px)] overflow-hidden flex flex-col animate-fade-in">
                 <EnhancedCommunityTips />
               </div>
             )}
