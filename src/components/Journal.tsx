@@ -34,6 +34,21 @@ const journalPrompts: Record<Mood, string[]> = {
     'What\'s something you\'d like to explore or learn about?',
     'How would you describe your energy levels right now?'
   ],
+  'anxious': [
+    'What specifically is causing your anxiety right now?',
+    'What has helped calm your anxiety in the past?',
+    'What would help you feel more grounded in this moment?'
+  ],
+  'stressed': [
+    'What pressures are you feeling right now?',
+    'What boundaries might you need to set?',
+    'What small action could help reduce your stress level?'
+  ],
+  'calm': [
+    'What contributed to this sense of calm?',
+    'How can you bring more of this feeling into your daily life?',
+    'What are you appreciating about this peaceful moment?'
+  ],
   'unknown': [
     'How are you feeling right now?',
     'What\'s on your mind today?',
