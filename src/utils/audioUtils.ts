@@ -14,9 +14,24 @@ export const generateAudio = async (text: string): Promise<string> => {
   });
 };
 
+// Get a random background ambient track for meditation
+export const getRandomMeditationBgTrack = (): string => {
+  const tracks = [
+    'https://assets.mixkit.co/sfx/preview/mixkit-relaxing-rain-loop-1241.mp3',
+    'https://assets.mixkit.co/sfx/preview/mixkit-forest-stream-1191.mp3',
+    'https://assets.mixkit.co/sfx/preview/mixkit-campfire-pops-1359.mp3',
+    'https://assets.mixkit.co/sfx/preview/mixkit-serene-ocean-waves-1185.mp3',
+  ];
+  
+  return tracks[Math.floor(Math.random() * tracks.length)];
+};
+
 // Play synthesized speech using the Web Speech API
 export const playSpeechSynthesis = (text: string) => {
   if ('speechSynthesis' in window) {
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+    
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.9;  // Slightly slower rate for meditation
     utterance.pitch = 1;   // Normal pitch
@@ -63,5 +78,44 @@ export const startSpeechRecognition = (): Promise<string> => {
     };
     
     recognition.start();
+  });
+};
+
+// Add service worker registration for offline support
+export const registerServiceWorker = async (): Promise<void> => {
+  if ('serviceWorker' in navigator) {
+    try {
+      await navigator.serviceWorker.register('/sw.js');
+      console.log('Service worker registered successfully');
+    } catch (error) {
+      console.error('Service worker registration failed:', error);
+    }
+  }
+};
+
+// Preload meditation audio for performance
+export const preloadMeditationAudio = (): void => {
+  const tracks = [
+    'https://assets.mixkit.co/sfx/preview/mixkit-relaxing-rain-loop-1241.mp3',
+    'https://assets.mixkit.co/sfx/preview/mixkit-forest-stream-1191.mp3',
+    'https://assets.mixkit.co/sfx/preview/mixkit-campfire-pops-1359.mp3',
+    'https://assets.mixkit.co/sfx/preview/mixkit-serene-ocean-waves-1185.mp3',
+  ];
+  
+  // Preload in background
+  tracks.forEach(track => {
+    const audio = new Audio();
+    audio.preload = 'metadata';  // Just load metadata for faster initial loading
+    audio.src = track;
+    
+    // We only need to trigger loading, don't need to play
+    audio.addEventListener('canplaythrough', () => {
+      console.log('Preloaded meditation track:', track);
+    });
+    
+    // Handle errors silently
+    audio.addEventListener('error', () => {
+      console.warn('Failed to preload meditation track:', track);
+    });
   });
 };

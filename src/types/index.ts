@@ -1,5 +1,5 @@
 
-export type Mood = 'happy' | 'sad' | 'angry' | 'neutral' | 'unknown';
+export type Mood = 'happy' | 'sad' | 'angry' | 'neutral' | 'anxious' | 'stressed' | 'calm' | 'unknown';
 
 export interface Message {
   id: string;
@@ -7,6 +7,7 @@ export interface Message {
   sender: 'bot' | 'user';
   timestamp: Date;
   audio?: string;
+  followUpQuestions?: string[];
 }
 
 export interface Recommendation {
@@ -32,6 +33,11 @@ export interface Tip {
   timestamp: Date;
   likes?: number; // Added for the like system
   likedBy?: string[]; // Added to track who liked each tip
+  location?: {
+    latitude: number;
+    longitude: number;
+    locationName?: string;
+  };
 }
 
 export interface JournalEntry {
@@ -48,3 +54,9 @@ export interface MoodRecord {
 
 // For dark mode
 export type Theme = 'light' | 'dark';
+
+// For dynamic follow-up questions
+export interface FollowUpQuestion {
+  mood: Mood;
+  questions: string[];
+}

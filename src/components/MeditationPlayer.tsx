@@ -1,9 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { playSpeechSynthesis } from '@/utils/audioUtils';
-import { Headphones, Volume2, VolumeX, Pause, SkipForward } from 'lucide-react';
-import { useToast } from "@/hooks/use-toast";
+import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { playSpeechSynthesis, getRandomMeditationBgTrack } from '@/utils/audioUtils';
 
 interface MeditationPlayerProps {
   audioText: string;
@@ -11,225 +10,101 @@ interface MeditationPlayerProps {
 
 const MeditationPlayer: React.FC<MeditationPlayerProps> = ({ audioText }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const timerRef = useRef<number | null>(null);
-  const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const { toast } = useToast();
+  const [bgMusicEnabled, setBgMusicEnabled] = useState(true);
+  const bgAudioRef = useRef<HTMLAudioElement | null>(null);
+  const bgTrackRef = useRef<string>('');
   
-  // Clean up on unmount
   useEffect(() => {
+    // Get a random background track when the component mounts
+    bgTrackRef.current = getRandomMeditationBgTrack();
+    
+    // Initialize the audio element
+    bgAudioRef.current = new Audio(bgTrackRef.current);
+    bgAudioRef.current.loop = true;
+    bgAudioRef.current.volume = 0.2;  // Lower volume for background
+    
     return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
+      // Clean up audio when component unmounts
+      if (bgAudioRef.current) {
+        bgAudioRef.current.pause();
+        bgAudioRef.current = null;
       }
-      if (speechRef.current) {
+      
+      // Also stop any ongoing speech synthesis
+      if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
     };
   }, []);
   
-  const handlePlay = () => {
-    if (isPaused) {
-      resumeSpeech();
-      return;
-    }
-    
-    if (!isPlaying) {
-      try {
-        // Create utterance
-        const utterance = new SpeechSynthesisUtterance(audioText);
-        utterance.rate = 0.9;
-        speechRef.current = utterance;
-        
-        // Get available voices
-        const voices = window.speechSynthesis.getVoices();
-        const preferredVoice = voices.find(voice => 
-          voice.name.includes('Female') || 
-          voice.name.includes('Google') || 
-          voice.name.includes('Samantha')
-        );
-        
-        if (preferredVoice) {
-          utterance.voice = preferredVoice;
-        }
-        
-        // Set up event handlers
-        utterance.onstart = () => {
-          setIsPlaying(true);
-          setIsPaused(false);
-          
-          // Start progress timer
-          const wordCount = audioText.split(' ').length;
-          const totalDuration = wordCount * 200; // Approx duration in ms
-          
-          let startTime = Date.now();
-          timerRef.current = window.setInterval(() => {
-            const elapsed = Date.now() - startTime;
-            const newProgress = Math.min((elapsed / totalDuration) * 100, 100);
-            setProgress(newProgress);
-            
-            if (newProgress >= 100) {
-              clearInterval(timerRef.current!);
-            }
-          }, 100);
-        };
-        
-        utterance.onend = () => {
-          setIsPlaying(false);
-          setIsPaused(false);
-          setProgress(0);
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-          }
-        };
-        
-        // Start speaking
-        window.speechSynthesis.speak(utterance);
-      } catch (error) {
-        console.error('Error with text-to-speech:', error);
-        toast({
-          variant: "destructive",
-          title: "Audio Error",
-          description: "Could not play meditation audio. Please try again."
+  const handlePlayPause = () => {
+    if (isPlaying) {
+      // Stop playback
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      
+      if (bgAudioRef.current && bgMusicEnabled) {
+        bgAudioRef.current.pause();
+      }
+    } else {
+      // Start playback
+      if (bgAudioRef.current && bgMusicEnabled) {
+        bgAudioRef.current.currentTime = 0;
+        bgAudioRef.current.play().catch(error => {
+          console.error("Error playing background audio:", error);
         });
       }
+      
+      playSpeechSynthesis(audioText);
     }
-  };
-  
-  const handleStop = () => {
-    if (isPlaying || isPaused) {
-      window.speechSynthesis.cancel();
-      setIsPlaying(false);
-      setIsPaused(false);
-      setProgress(0);
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    }
-  };
-  
-  const handlePause = () => {
-    if (isPlaying) {
-      window.speechSynthesis.pause();
-      setIsPaused(true);
-      setIsPlaying(false);
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    }
-  };
-  
-  const resumeSpeech = () => {
-    window.speechSynthesis.resume();
-    setIsPaused(false);
-    setIsPlaying(true);
     
-    // Resume progress timer
-    if (timerRef.current) {
-      const wordCount = audioText.split(' ').length;
-      const totalDuration = wordCount * 200;
-      const remainingDuration = totalDuration * (1 - progress / 100);
-      
-      let startTime = Date.now();
-      let startProgress = progress;
-      
-      timerRef.current = window.setInterval(() => {
-        const elapsed = Date.now() - startTime;
-        const additionalProgress = (elapsed / remainingDuration) * (100 - startProgress);
-        const newProgress = Math.min(startProgress + additionalProgress, 100);
-        setProgress(newProgress);
-        
-        if (newProgress >= 100) {
-          clearInterval(timerRef.current!);
-        }
-      }, 100);
+    setIsPlaying(!isPlaying);
+  };
+  
+  const toggleBgMusic = () => {
+    const newState = !bgMusicEnabled;
+    setBgMusicEnabled(newState);
+    
+    if (bgAudioRef.current) {
+      if (newState && isPlaying) {
+        bgAudioRef.current.play().catch(error => {
+          console.error("Error playing background audio:", error);
+        });
+      } else {
+        bgAudioRef.current.pause();
+      }
     }
   };
   
-  const skipToEnd = () => {
-    handleStop();
-    toast({
-      title: "Meditation Skipped",
-      description: "The meditation has been skipped."
-    });
-  };
-
   return (
-    <div className="mt-4 flex flex-col gap-2">
-      <div className="flex items-center gap-2 text-mindmosaic-dark-purple dark:text-white">
-        <Headphones size={18} />
-        <span className="text-sm font-medium">Meditation Audio</span>
+    <div className="mt-3 p-3 bg-mindmosaic-light-purple/60 rounded-lg flex items-center gap-3 dark:bg-mindmosaic-dark-purple/60">
+      <Button
+        onClick={handlePlayPause}
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 rounded-full bg-white dark:bg-mindmosaic-light-purple text-mindmosaic-purple"
+        aria-label={isPlaying ? "Pause meditation" : "Play meditation"}
+      >
+        {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+      </Button>
+      
+      <div className="flex-1">
+        <p className="text-xs font-medium">Guided Meditation</p>
+        <p className="text-xs opacity-80">
+          {isPlaying ? "Playing..." : "Click to play"}
+        </p>
       </div>
       
-      <div className="flex flex-col gap-2">
-        <div className="flex gap-2">
-          {!isPlaying && !isPaused ? (
-            <Button
-              onClick={handlePlay}
-              variant="outline"
-              className="flex-1 bg-white dark:bg-mindmosaic-dark-gray hover:bg-mindmosaic-light-purple text-mindmosaic-dark-purple hover:text-mindmosaic-dark-purple dark:text-white flex gap-2 items-center"
-            >
-              <Volume2 size={16} />
-              Play Meditation
-            </Button>
-          ) : (
-            <>
-              {isPlaying ? (
-                <Button
-                  onClick={handlePause}
-                  variant="outline"
-                  className="flex-1 bg-mindmosaic-light-purple/30 hover:bg-mindmosaic-light-purple text-mindmosaic-dark-purple flex gap-2 items-center"
-                >
-                  <Pause size={16} />
-                  Pause
-                </Button>
-              ) : (
-                <Button
-                  onClick={resumeSpeech}
-                  variant="outline"
-                  className="flex-1 bg-mindmosaic-light-purple/30 hover:bg-mindmosaic-light-purple text-mindmosaic-dark-purple flex gap-2 items-center"
-                >
-                  <Volume2 size={16} />
-                  Resume
-                </Button>
-              )}
-              
-              <Button
-                onClick={handleStop}
-                variant="outline"
-                className="bg-white dark:bg-mindmosaic-dark-gray hover:bg-red-100 text-red-500 flex gap-2 items-center"
-              >
-                <VolumeX size={16} />
-                Stop
-              </Button>
-              
-              <Button
-                onClick={skipToEnd}
-                variant="ghost"
-                size="icon"
-                className="rounded-full hover:bg-mindmosaic-light-purple hover:text-mindmosaic-purple"
-                aria-label="Skip meditation"
-              >
-                <SkipForward size={16} />
-              </Button>
-            </>
-          )}
-        </div>
-        
-        {(isPlaying || isPaused) && (
-          <div className="w-full bg-mindmosaic-light-gray dark:bg-mindmosaic-dark-gray/50 rounded-full h-2 overflow-hidden">
-            <div 
-              className="h-full bg-mindmosaic-purple transition-all duration-300"
-              style={{ width: `${progress}%` }}
-              role="progressbar"
-              aria-valuenow={progress}
-              aria-valuemin={0}
-              aria-valuemax={100}
-            ></div>
-          </div>
-        )}
-      </div>
+      <Button
+        onClick={toggleBgMusic}
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 rounded-full hover:bg-white/20"
+        aria-label={bgMusicEnabled ? "Disable background music" : "Enable background music"}
+      >
+        {bgMusicEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+      </Button>
     </div>
   );
 };

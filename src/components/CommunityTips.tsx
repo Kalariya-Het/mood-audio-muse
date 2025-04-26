@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send } from 'lucide-react';
+import { Send, ThumbsUp } from 'lucide-react';
 import { Tip } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 
@@ -37,7 +37,9 @@ const CommunityTips: React.FC = () => {
       const tip: Tip = {
         id: `tip-${Date.now()}`,
         text: newTip.trim(),
-        timestamp: new Date()
+        timestamp: new Date(),
+        likes: 0,
+        likedBy: []
       };
       
       setTips([...tips, tip]);
@@ -50,10 +52,51 @@ const CommunityTips: React.FC = () => {
     }
   };
   
+  const handleLikeTip = (tipId: string) => {
+    // Generate a random user ID if we don't have one yet
+    const userId = localStorage.getItem('mindMosaicUserId') || 
+      `user-${Math.random().toString(36).substring(2, 15)}`;
+    
+    if (!localStorage.getItem('mindMosaicUserId')) {
+      localStorage.setItem('mindMosaicUserId', userId);
+    }
+    
+    setTips(prevTips => 
+      prevTips.map(tip => {
+        if (tip.id === tipId) {
+          // Check if user already liked this tip
+          const alreadyLiked = tip.likedBy?.includes(userId);
+          if (alreadyLiked) {
+            // Unlike
+            return {
+              ...tip,
+              likes: (tip.likes || 0) - 1,
+              likedBy: tip.likedBy?.filter(id => id !== userId)
+            };
+          } else {
+            // Like
+            return {
+              ...tip,
+              likes: (tip.likes || 0) + 1,
+              likedBy: [...(tip.likedBy || []), userId]
+            };
+          }
+        }
+        return tip;
+      })
+    );
+  };
+  
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && newTip.trim()) {
       handleAddTip();
     }
+  };
+  
+  // Check if a tip is liked by the current user
+  const isLikedByUser = (tip: Tip): boolean => {
+    const userId = localStorage.getItem('mindMosaicUserId');
+    return Boolean(userId && tip.likedBy?.includes(userId));
   };
   
   return (
@@ -67,25 +110,41 @@ const CommunityTips: React.FC = () => {
           onKeyPress={handleKeyPress}
           placeholder="Share a wellness tip anonymously..."
           className="flex-1"
+          aria-label="New tip input"
         />
         <Button 
           onClick={handleAddTip} 
           disabled={!newTip.trim()}
           className="bg-mindmosaic-purple hover:bg-mindmosaic-dark-purple"
+          aria-label="Share tip"
         >
           <Send size={16} className="mr-1" /> Share
         </Button>
       </div>
       
-      <div className="max-h-60 overflow-y-auto pr-1">
+      <div className="max-h-60 overflow-y-auto pr-1 scrollbar-thin">
         {tips.length > 0 ? (
           <div>
             {tips.map(tip => (
               <div key={tip.id} className="tip-item">
                 <p className="text-sm">{tip.text}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {new Date(tip.timestamp).toLocaleDateString()}
-                </p>
+                <div className="flex justify-between items-center mt-1">
+                  <p className="text-xs text-gray-500">
+                    {new Date(tip.timestamp).toLocaleDateString()}
+                  </p>
+                  <Button
+                    onClick={() => handleLikeTip(tip.id)}
+                    variant="ghost"
+                    size="sm"
+                    className={`text-xs flex items-center gap-1 ${
+                      isLikedByUser(tip) ? "text-mindmosaic-purple" : "text-gray-500"
+                    }`}
+                    aria-label={isLikedByUser(tip) ? "Unlike tip" : "Like tip"}
+                  >
+                    <ThumbsUp size={14} />
+                    <span>{tip.likes || 0}</span>
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
