@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import ChatBubble from './ChatBubble';
 import ChatInput from './ChatInput';
@@ -12,6 +13,7 @@ import { getSpotifyRecommendation } from '@/utils/spotifyRecommendations';
 import { generateAudio, playSpeechSynthesis } from '@/utils/audioUtils';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 
 const Chat: React.FC = () => {

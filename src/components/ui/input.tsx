@@ -23,7 +23,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
 Input.displayName = "Input";
 
-// Re-export the Input component
 export { Input };
 
 // Export Textarea component 
