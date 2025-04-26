@@ -1,6 +1,6 @@
 
+import Sentiment from 'sentiment';
 import { Mood } from '@/types';
-import * as Sentiment from 'sentiment';
 
 // Initialize sentiment analyzer
 const sentiment = new Sentiment();
