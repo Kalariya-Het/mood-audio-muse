@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/input"; // Fixed import
 import { Send } from 'lucide-react';
 import { Tip } from '@/types';
 import { useToast } from "@/hooks/use-toast";

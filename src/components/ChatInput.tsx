@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/input"; // Fixed import
 import { Send, Mic, MicOff } from 'lucide-react';
 import { startSpeechRecognition } from '@/utils/audioUtils';
 import { useToast } from "@/hooks/use-toast";

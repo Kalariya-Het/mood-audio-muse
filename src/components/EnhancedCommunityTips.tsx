@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/input"; // Fixed import
 import { v4 as uuidv4 } from 'uuid';
 import { Tip } from '@/types';
 import { MessageCircle, Send, ThumbsUp } from 'lucide-react';

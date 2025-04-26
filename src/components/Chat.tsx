@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import ChatBubble from './ChatBubble';
 import ChatInput from './ChatInput';
@@ -13,6 +12,7 @@ import { getSpotifyRecommendation } from '@/utils/spotifyRecommendations';
 import { generateAudio, playSpeechSynthesis } from '@/utils/audioUtils';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -26,9 +26,7 @@ const Chat: React.FC = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const isFirstRender = useRef(true);
   
-  // Initial welcome message
   useEffect(() => {
-    // Load mood history from localStorage
     const savedMoodHistory = localStorage.getItem('moodHistory');
     if (savedMoodHistory) {
       try {
@@ -51,7 +49,6 @@ const Chat: React.FC = () => {
     
     setMessages([welcomeMessage]);
     
-    // Check for browser support
     const browserSupportMessage = checkBrowserSupport();
     if (browserSupportMessage) {
       setTimeout(() => {
@@ -64,7 +61,6 @@ const Chat: React.FC = () => {
       }, 1000);
     }
     
-    // Register service worker for offline support
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch(error => {
@@ -74,19 +70,16 @@ const Chat: React.FC = () => {
     }
   }, []);
   
-  // Auto-scroll to the most recent message
   useEffect(() => {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
   
-  // Play audio for bot messages with text-to-speech
   useEffect(() => {
     if (!isFirstRender.current && messages.length > 0) {
       const latestMessage = messages[messages.length - 1];
       if (latestMessage.sender === 'bot' && latestMessage.text) {
-        // Don't read meditation scripts or long texts
         if (!latestMessage.audio && latestMessage.text.length < 200) {
           setTimeout(() => {
             playSpeechSynthesis(latestMessage.text);
@@ -100,7 +93,6 @@ const Chat: React.FC = () => {
   const checkBrowserSupport = (): string | null => {
     let missingFeatures = [];
     
-    // Check Web Speech API
     if (!('webkitSpeechRecognition' in window)) {
       missingFeatures.push('voice input');
     }
@@ -109,7 +101,6 @@ const Chat: React.FC = () => {
       missingFeatures.push('text-to-speech');
     }
     
-    // Check LocalStorage
     if (!('localStorage' in window)) {
       missingFeatures.push('data storage');
     }
@@ -132,17 +123,14 @@ const Chat: React.FC = () => {
     const updatedHistory = [...moodHistory, newRecord];
     setMoodHistory(updatedHistory);
     
-    // Save to localStorage
     localStorage.setItem('moodHistory', JSON.stringify(updatedHistory));
     
-    // Show mood chart after collecting a few mood datapoints
     if (updatedHistory.length >= 3 && !showMoodChart) {
       setShowMoodChart(true);
     }
   };
   
   const handleSendMessage = async (text: string) => {
-    // Add user message
     const userMessage: Message = {
       id: uuidv4(),
       text,
@@ -154,15 +142,12 @@ const Chat: React.FC = () => {
     setProcessing(true);
     
     try {
-      // Detect mood from user message
       const detectedMood = detectMood(text);
       setCurrentMood(detectedMood);
       saveMoodToHistory(detectedMood);
       
-      // Get recommendations for the mood
       const recommendations = getMoodRecommendations(detectedMood);
       
-      // Try to get Spotify recommendation
       let spotifyRec = null;
       try {
         spotifyRec = await getSpotifyRecommendation(detectedMood);
@@ -176,23 +161,19 @@ const Chat: React.FC = () => {
         }
       } catch (error) {
         console.error('Error fetching Spotify recommendation:', error);
-        // Use default recommendation from getMoodRecommendations
       }
       
-      // Generate response based on mood
       const responseText = generateResponse(detectedMood);
       
-      // Generate meditation audio based on mood
       const audioText = recommendations.meditationScript;
       const audio = await generateAudio(audioText);
       
-      // Add bot response with recommendations
       const botResponse: Message = {
         id: uuidv4(),
         text: responseText,
         sender: 'bot',
         timestamp: new Date(),
-        audio: audioText  // Store the text to be spoken
+        audio: audioText
       };
       
       setMessages(prev => [...prev, botResponse]);
@@ -205,7 +186,6 @@ const Chat: React.FC = () => {
     } catch (error) {
       console.error('Error processing message:', error);
       
-      // Add error message
       const errorMessage: Message = {
         id: uuidv4(),
         text: "I'm having trouble understanding right now. Could you try again?",
@@ -230,7 +210,6 @@ const Chat: React.FC = () => {
           <ChatBubble key={message.id} message={message} />
         ))}
         
-        {/* Show recommendations after mood detection */}
         {hasRecommendations && currentMood !== 'unknown' && (
           <>
             <RecommendationsCard 
@@ -241,15 +220,12 @@ const Chat: React.FC = () => {
           </>
         )}
         
-        {/* Journal component */}
         <Journal currentMood={currentMood} />
         
-        {/* Mood Chart */}
         {moodHistory.length >= 2 && showMoodChart && (
           <MoodChart moodHistory={moodHistory} />
         )}
         
-        {/* Invisible element for auto-scrolling */}
         <div ref={chatEndRef} />
       </div>
       
@@ -259,7 +235,6 @@ const Chat: React.FC = () => {
           disabled={processing}
         />
         
-        {/* Show mood chart button if we have enough history */}
         {moodHistory.length >= 2 && (
           <div className="flex justify-center mt-2">
             <Button
