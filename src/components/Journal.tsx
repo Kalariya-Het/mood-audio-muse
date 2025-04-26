@@ -7,6 +7,7 @@ import { Mood, JournalEntry } from '@/types';
 import { getMoodEmoji } from '@/utils/moodDetection';
 import { v4 as uuidv4 } from 'uuid';
 import { Book, Save, X } from 'lucide-react';
+import { useJournal } from '@/hooks/useJournal';
 
 interface JournalProps {
   currentMood: Mood;
@@ -21,21 +22,21 @@ const journalPrompts: Record<Mood, string[]> = {
   'sad': [
     'What emotions are present for you right now?',
     'What would offer you comfort in this moment?',
-    'What's one small step you could take toward feeling better?'
+    'What\'s one small step you could take toward feeling better?'
   ],
   'angry': [
     'What triggered this feeling?',
-    'What needs of yours aren't being met?',
+    'What needs of yours aren\'t being met?',
     'What would help you feel more at peace right now?'
   ],
   'neutral': [
     'What are you looking forward to today or tomorrow?',
-    'What's something you'd like to explore or learn about?',
+    'What\'s something you\'d like to explore or learn about?',
     'How would you describe your energy levels right now?'
   ],
   'unknown': [
     'How are you feeling right now?',
-    'What's on your mind today?',
+    'What\'s on your mind today?',
     'What would make today meaningful for you?'
   ]
 };
@@ -44,24 +45,8 @@ const Journal: React.FC<JournalProps> = ({ currentMood }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [entry, setEntry] = useState('');
-  const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [showEntries, setShowEntries] = useState(false);
-
-  // Load saved entries
-  useEffect(() => {
-    const savedEntries = localStorage.getItem('journalEntries');
-    if (savedEntries) {
-      try {
-        const parsed = JSON.parse(savedEntries);
-        setEntries(parsed.map((e: any) => ({
-          ...e,
-          timestamp: new Date(e.timestamp)
-        })));
-      } catch (e) {
-        console.error('Error parsing journal entries:', e);
-      }
-    }
-  }, []);
+  const { entries, addEntry, deleteEntry } = useJournal();
 
   // Generate a random prompt when mood changes or when journal opens
   useEffect(() => {
@@ -81,10 +66,7 @@ const Journal: React.FC<JournalProps> = ({ currentMood }) => {
         timestamp: new Date()
       };
       
-      const updatedEntries = [...entries, newEntry];
-      setEntries(updatedEntries);
-      localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
-      
+      addEntry(newEntry);
       setEntry('');
       setIsOpen(false);
     }

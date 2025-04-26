@@ -101,7 +101,7 @@ const fallbackRecommendations: Record<Mood, SpotifyRecommendation[]> = {
       name: 'What a Wonderful World',
       artist: 'Louis Armstrong',
       id: '29U7stRjqHU6rMiS8BfaI9',
-      description: 'A classic celebration of life's simple beauties'
+      description: 'A classic celebration of life\'s simple beauties'
     },
     {
       name: 'Somewhere Over the Rainbow',
